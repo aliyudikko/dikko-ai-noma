@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Large datasets
+data/pretraining/*.bin
+data/finetuning/*.bin
+
+# Model checkpoints
+checkpoints/
+*.pt
+*.pth
+*.safetensors
+
+# Logs
+logs/
+*.log
+frontend
+frontend/*
+# Cache
+.cache/

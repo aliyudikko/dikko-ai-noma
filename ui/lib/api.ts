@@ -1,10 +1,8 @@
-// lib/api.ts
-
 import { ChatRequest, ChatResponse, ApiError } from '@/types/chat';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-// Mock responses for when backend is not available
+// Mock responses for when mock mode is explicitly enabled
 const MOCK_RESPONSES: Record<string, string> = {
   'default': `Assalamu alaikum! Na gode da tambayarka.
 
@@ -31,7 +29,6 @@ Ga muhimman abubuwa game da noman masara:
 Idan kana buƙatar ƙarin bayani, ka tambaya. Zan taimaka.`
 };
 
-// Simple keyword matching for mock responses
 function getMockResponse(message: string): string {
   const lowerMsg = message.toLowerCase();
   if (lowerMsg.includes('masara') || lowerMsg.includes('masar')) {
@@ -46,38 +43,56 @@ export class ApiService {
 
   constructor() {
     this.baseUrl = API_URL;
-    // If API_URL is not set or is 'mock', use mock mode
-    this.isMockMode = !API_URL || API_URL === 'mock' || API_URL === 'http://localhost:8000';
+    // Only use mock mode if explicitly set to 'mock'
+    this.isMockMode = API_URL === 'mock';
   }
 
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
     if (this.isMockMode) {
-      // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 500));
       
       return {
         response: getMockResponse(request.message),
-        used_rag: Math.random() > 0.6,
-        sources: Math.random() > 0.7 ? ['Tushen ilimi 1', 'Tushen ilimi 2'] : undefined,
+        used_rag: false,
+        sources: undefined,
         conversation_id: request.conversation_id || 'mock-conv-1'
       };
     }
 
     try {
+      // Map frontend request format to FastAPI backend schema
+      const backendPayload = {
+        message: request.message,
+        max_new_tokens: 100,
+        temperature: 0.7,
+        top_k: 50,
+        top_p: 0.9,
+        do_sample: true
+      };
+
       const response = await fetch(`${this.baseUrl}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify(backendPayload),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error ${response.status}`);
+        throw new Error(errorData.detail || `HTTP error ${response.status}`);
       }
 
-      return await response.json();
+      const data = await response.json();
+
+      // Map backend response format back to frontend ChatResponse type
+      return {
+        response: data.response,
+        used_rag: false,
+        sources: undefined,
+        conversation_id: request.conversation_id || 'conv-1'
+      };
     } catch (error) {
       throw {
         message: 'Yi haƙuri, an samu matsala wajen haɗawa da sabar. Da fatan za a sake gwadawa.',
@@ -91,7 +106,7 @@ export class ApiService {
     if (this.isMockMode) return true;
     
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
+      const response = await fetch(`${this.baseUrl}/api/health`, {
         method: 'GET',
         signal: AbortSignal.timeout(3000),
       });

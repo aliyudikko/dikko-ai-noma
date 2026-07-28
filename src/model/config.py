@@ -14,7 +14,7 @@ class ModelConfig:
     num_layers: int = 2
     num_heads: int = 4
     head_dim: int = 64  # hidden_size // num_heads = 64
-    ff_dim: int = 1024  # 4 * hidden_size
+    ff_dim: int = 682   # Updated to match checkpoint dimension (was 1024)
     
     # Context and position
     max_seq_len: int = 256
